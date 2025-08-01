@@ -1,103 +1,192 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useEffect, useRef, useState } from "react";
+import { supabase } from "./lib/supabase";
+import { MdMarkUnreadChatAlt } from "react-icons/md";
+
+interface Message {
+  id: number;
+  username: string;
+  message: string;
+  created_at: string;
+}
+
+const COLORS = [
+  "text-blue-600",
+  "text-green-600",
+  "text-purple-600",
+  "text-red-600",
+  "text-pink-600",
+  "text-indigo-600",
+  "text-yellow-600",
+];
+
+export default function ChatRoom() {
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [newMessage, setNewMessage] = useState("");
+  const [username, setUsername] = useState("");
+
+  const bottomRef = useRef<HTMLDivElement | null>(null);
+
+  const getUsernameColor = (name: string) => {
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) {
+      hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return COLORS[Math.abs(hash) % COLORS.length];
+  };
+
+  const sendToTelegram = async (text: string) => {
+    try {
+      await fetch("/api/send-to-telegram", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: text }),
+      });
+    } catch (err) {
+      console.error("Failed to send message to Telegram:", err);
+    }
+  };
+
+  useEffect(() => {
+    const fetchMessages = async () => {
+      const { data } = await supabase
+        .from("messages")
+        .select("*")
+        .order("created_at", { ascending: true });
+      if (data) setMessages(data as Message[]);
+    };
+    fetchMessages();
+
+    const channel = supabase
+      .channel("public:messages")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "messages" },
+        (payload: any) => {
+          setMessages((prev) => [...prev, payload.new as Message]);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  const sendMessage = async () => {
+    if (newMessage.trim() === "" || username.trim() === "") return;
+
+    const { error } = await supabase.from("messages").insert([
+      {
+        username,
+        message: newMessage,
+      },
+    ]);
+
+    if (!error) {
+      await sendToTelegram(`${newMessage}`);
+    }
+
+    setNewMessage("");
+  };
+
+  const clearChat = async () => {
+    const confirmClear = confirm("Yakin ingin menghapus semua pesan?");
+    if (confirmClear) {
+      await supabase.from("messages").delete().neq("id", 0);
+      setMessages([]);
+    }
+  };
+
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <section className="bg-gray-50 p-6">
+      <div className="max-w-[1440px] mx-auto">
+        <div className="bg-white rounded-xl shadow-md p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+              <MdMarkUnreadChatAlt /> Chat Room
+            </h1>
+            <button
+              onClick={clearChat}
+              className="text-sm bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-md transition"
+            >
+              Clear Chat
+            </button>
+          </div>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+          <input
+            className="border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none rounded-md p-2 w-full mb-3 text-sm"
+            placeholder="Your name..."
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+          />
+
+          <div className="border border-gray-200 rounded-md p-3 h-[500px] overflow-y-auto mb-3 bg-gray-100">
+            {messages.length === 0 ? (
+              <p className="text-gray-500 text-center">Belum ada pesan</p>
+            ) : (
+              messages.map((msg) => {
+                const isMe = msg.username === username;
+                const colorClass = getUsernameColor(msg.username);
+                const time = new Date(msg.created_at).toLocaleTimeString("id-ID", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                });
+
+                return (
+                  <div
+                    key={msg.id}
+                    className={`flex mb-3 ${isMe ? "justify-end" : "justify-start"}`}
+                  >
+                    {!isMe && (
+                      <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center text-sm font-bold text-white mr-2">
+                        {msg.username.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                    <div
+                      className={`max-w-[70%] p-2 rounded-lg shadow-sm ${
+                        isMe
+                          ? "bg-blue-200 text-black rounded-br-none"
+                          : "bg-white text-gray-900 rounded-bl-none"
+                      }`}
+                    >
+                      <div className="flex justify-between items-center mb-1">
+                        <p className={`text-sm font-semibold ${colorClass}`}>
+                          {msg.username}
+                        </p>
+                      </div>
+                      <p className="text-lg break-words">{msg.message}</p>
+                      <span className="text-[10px] text-gray-500">{time}</span>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+            <div ref={bottomRef} />
+          </div>
+
+          <div className="flex space-x-2">
+            <input
+              className="border border-gray-300 focus:ring-2 focus:ring-blue-400 focus:outline-none rounded-md flex-1 p-2 text-sm"
+              placeholder="Write a message..."
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && sendMessage()}
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+            <button
+              onClick={sendMessage}
+              className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md transition"
+            >
+              Send
+            </button>
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+      </div>
+    </section>
   );
 }
