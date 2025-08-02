@@ -1,14 +1,20 @@
 "use client";
+
 import { useState } from "react";
 import type React from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabase";
+import { FiEye, FiEyeOff } from "react-icons/fi";
+import { FaRegUser } from "react-icons/fa";
+import { MdOutlineMarkEmailUnread } from "react-icons/md";
+import { TbLockPassword } from "react-icons/tb";
 
 export default function RegisterForm() {
   const [form, setForm] = useState({ username: "", email: "", password: "" });
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,24 +68,12 @@ export default function RegisterForm() {
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <svg
-                    className="h-5 w-5 text-gray-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                    />
-                  </svg>
+                  <FaRegUser className="text-gray-600" />
                 </div>
                 <input
                   id="username"
                   type="text"
-                  placeholder="Pilih username unik"
+                  placeholder="Username unik"
                   value={form.username}
                   onChange={(e) =>
                     setForm({ ...form, username: e.target.value })
@@ -99,19 +93,7 @@ export default function RegisterForm() {
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <svg
-                    className="h-5 w-5 text-gray-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207"
-                    />
-                  </svg>
+                  <MdOutlineMarkEmailUnread className="text-gray-600" />
                 </div>
                 <input
                   id="email"
@@ -134,29 +116,29 @@ export default function RegisterForm() {
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <svg
-                    className="h-5 w-5 text-gray-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                    />
-                  </svg>
+                  <TbLockPassword className="text-gray-600" />
                 </div>
+
+                <div
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer text-gray-500"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                >
+                  {showPassword ? (
+                    <FiEyeOff className="w-5 h-5" />
+                  ) : (
+                    <FiEye className="w-5 h-5" />
+                  )}
+                </div>
+
                 <input
                   id="password"
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   placeholder="Minimal 6 karakter"
                   value={form.password}
                   onChange={(e) =>
                     setForm({ ...form, password: e.target.value })
                   }
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white"
+                  className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 bg-gray-50 focus:bg-white"
                   required
                   minLength={6}
                 />
@@ -168,19 +150,7 @@ export default function RegisterForm() {
 
             {error && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-center space-x-2">
-                <svg
-                  className="h-5 w-5 text-red-500 flex-shrink-0"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
+                <TbLockPassword className="text-gray-600" />
                 <p className="text-red-700 text-sm">{error}</p>
               </div>
             )}
@@ -201,25 +171,6 @@ export default function RegisterForm() {
             </button>
           </form>
 
-        <div className="text-center mt-8">
-          <div className="inline-flex items-center space-x-2 text-xs text-gray-500">
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-              />
-            </svg>
-            <span>Data Anda aman dan terenkripsi</span>
-          </div>
-        </div>
-
           <div className="mt-8 pt-6 border-t border-gray-200">
             <p className="text-center text-sm text-gray-600">
               Sudah punya akun?{" "}
@@ -232,7 +183,6 @@ export default function RegisterForm() {
             </p>
           </div>
         </div>
-
       </div>
     </div>
   );

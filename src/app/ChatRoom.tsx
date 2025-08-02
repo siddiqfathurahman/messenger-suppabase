@@ -182,11 +182,11 @@ export default function ChatRoom() {
         </div>
 
         <div className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 overflow-hidden">
-          <div className="h-[500px] overflow-y-auto p-6 bg-gradient-to-b from-gray-50/50 to-white/50">
+          <div className="h-[500px] overflow-y-auto p-4 bg-gradient-to-b from-gray-50/50 to-white/50">
             {messages.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full text-gray-500">
-                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                  <HiOutlineChatAlt2 />
+              <div className="flex flex-col items-center justify-center text-center h-full text-gray-500">
+                <div className="flex items-center justify-center mb-4">
+                  <HiOutlineChatAlt2 className="w-20 h-20" />
                 </div>
                 <p className="text-lg font-medium">Belum ada pesan</p>
                 <p className="text-sm">
@@ -239,7 +239,7 @@ export default function ChatRoom() {
                               {msg.username}
                             </p>
                           )}
-                          <p className="text-sm leading-relaxed break-words">
+                          <p className="md:text-[16px] text-[14px] font-normal leading-relaxed break-words">
                             {msg.message}
                           </p>
                           <p
@@ -272,7 +272,7 @@ export default function ChatRoom() {
               <div className="flex-1 relative">
                 <input
                   ref={inputRef}
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 pr-12"
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-full pr-12"
                   placeholder="Ketik pesan Anda..."
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
