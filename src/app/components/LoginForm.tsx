@@ -8,6 +8,7 @@ import { supabase } from "../lib/supabase";
 import { FiEye, FiEyeOff } from "react-icons/fi";
 import { FaRegUser } from "react-icons/fa";
 import { TbLockPassword } from "react-icons/tb";
+import bcrypt from "bcryptjs";
 
 export default function LoginForm() {
   const [form, setForm] = useState({ username: "", password: "" });
@@ -21,19 +22,28 @@ export default function LoginForm() {
     setIsLoading(true);
     setError("");
 
-    const { data, error } = await supabase
+    // Ambil user berdasarkan username
+    const { data, error: fetchError } = await supabase
       .from("users")
       .select("*")
       .eq("username", form.username)
-      .eq("password", form.password)
       .single();
 
-    if (error || !data) {
-      setError("Username atau Password salah");
+    if (fetchError || !data) {
+      setError("Username tidak ditemukan.");
       setIsLoading(false);
       return;
     }
 
+    const isPasswordMatch = bcrypt.compareSync(form.password, data.password);
+
+    if (!isPasswordMatch) {
+      setError("Password salah.");
+      setIsLoading(false);
+      return;
+    }
+
+    // Simpan username
     localStorage.setItem("username", data.username);
     router.push("/");
   };

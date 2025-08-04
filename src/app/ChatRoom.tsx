@@ -45,11 +45,13 @@ export default function ChatRoom() {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Handle emoji click
   const handleEmojiClick = (emojiData: any) => {
     setNewMessage((prev) => prev + emojiData.emoji);
     inputRef.current?.focus();
   };
 
+  // Get username color based on hash
   const getUsernameColor = (name: string) => {
     let hash = 0;
     for (let i = 0; i < name.length; i++) {
@@ -66,6 +68,7 @@ export default function ChatRoom() {
     return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
   };
 
+  // Send message to Telegram
   const sendToTelegram = async (text: string) => {
     try {
       await fetch("/api/send-to-telegram", {
@@ -78,6 +81,7 @@ export default function ChatRoom() {
     }
   };
 
+  
   useEffect(() => {
     const fetchMessages = async () => {
       const { data } = await supabase
@@ -104,6 +108,7 @@ export default function ChatRoom() {
     };
   }, []);
 
+  // Auto scrool new chat
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -124,6 +129,7 @@ export default function ChatRoom() {
     setNewMessage("");
   };
 
+  // Clear chat
   const clearChat = async () => {
     const confirmClear = confirm("Yakin ingin menghapus semua pesan?");
     if (confirmClear) {

@@ -8,6 +8,7 @@ import { FiEye, FiEyeOff } from "react-icons/fi";
 import { FaRegUser } from "react-icons/fa";
 import { MdOutlineMarkEmailUnread } from "react-icons/md";
 import { TbLockPassword } from "react-icons/tb";
+import bcrypt from "bcryptjs";
 
 export default function RegisterForm() {
   const [form, setForm] = useState({ username: "", email: "", password: "" });
@@ -15,25 +16,36 @@ export default function RegisterForm() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
+  const hashedPassword = bcrypt.hashSync(form.password, 10);
 
+  // Handle form submission
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
 
+    // Validasi input
     if (!form.username || !form.email || !form.password) {
       setError("Semua field harus diisi!");
       setIsLoading(false);
       return;
     }
 
+    // Cek apakah username sudah ada
     if (form.password.length < 6) {
       setError("Password minimal 6 karakter!");
       setIsLoading(false);
       return;
     }
 
-    const { error } = await supabase.from("users").insert([form]);
+    // hash password 
+    const { error } = await supabase.from("users").insert([
+      {
+        username: form.username,
+        email: form.email,
+        password: hashedPassword,
+      },
+    ]);
 
     if (error) {
       setError("Email atau Username sudah digunakan.");
@@ -41,6 +53,7 @@ export default function RegisterForm() {
       return;
     }
 
+    // Simpan username di localStorage
     localStorage.setItem("username", form.username);
     router.push("/");
   };
